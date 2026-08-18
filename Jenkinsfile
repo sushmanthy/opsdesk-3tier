@@ -1,58 +1,70 @@
 pipeline {
-  agent any
+    agent any
 
-  environment {
-    IMAGE_TAG = "${BUILD_NUMBER}"
-  }
-
-  stages {
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
+    environment {
+        POSTGRES_DB = 'opsdesk'
+        POSTGRES_USER = 'opsdesk'
+        POSTGRES_PASSWORD = 'opsdeskpass'
     }
 
-    stage('Validate') {
-      steps {
-        bat 'docker --version'
-        bat 'docker compose version'
-        bat 'docker compose config'
-      }
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Validate') {
+            steps {
+                bat 'docker --version'
+                bat 'docker compose version'
+                bat 'docker compose config'
+            }
+        }
+
+        stage('Build Images') {
+            steps {
+                bat 'docker compose build'
+            }
+        }
+
+        stage('Stop Existing Deployment') {
+            steps {
+                bat 'docker compose down --remove-orphans'
+            }
+        }
+
+        stage('Start Application') {
+            steps {
+                bat 'docker compose up -d'
+            }
+        }
+
+        stage('Verify Containers') {
+            steps {
+                bat 'docker compose ps'
+            }
+        }
+
+        stage('Test API') {
+            steps {
+                bat 'curl.exe -f http://localhost:5000 || exit /b 1'
+            }
+        }
     }
 
-    stage('Build Images') {
-      steps {
-        bat 'docker compose build'
-      }
-    }
+    post {
+        always {
+            bat 'docker compose ps'
+        }
 
-    stage('Test API Container') {
-      steps {
-        bat 'docker compose up -d'
-        bat 'timeout /t 12 /nobreak'
-        bat 'curl.exe -fsS http://localhost/api/health'
-      }
-    }
+        success {
+            echo 'OpsDesk deployment completed successfully.'
+        }
 
-    stage('Deploy') {
-      steps {
-        bat 'docker compose up -d --remove-orphans'
-      }
+        failure {
+            echo 'OpsDesk pipeline failed. Check the stage logs.'
+        }
     }
-  }
-
-  post {
-    always {
-      bat 'docker compose ps'
-      bat 'docker compose down'
-    }
-
-    success {
-      echo 'OpsDesk CI/CD completed successfully.'
-    }
-
-    failure {
-      echo 'Pipeline failed. Check the stage logs.'
-    }
-  }
 }
