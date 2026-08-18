@@ -1,0 +1,46 @@
+OPSDesk — AWS 3-TIER DEPLOYMENT
+
+                         INTERNET / USER
+                                |
+                                v
+                         [ AWS ALB / Nginx ]
+                                |
+                         HTTP/HTTPS : 80/443
+                                |
+                 +--------------+--------------+
+                 |                             |
+                 v                             |
+        [ Presentation Tier ]                  |
+          EC2 / Docker Nginx                   |
+                 |                             |
+                 | /api/* reverse proxy       |
+                 v                             |
+        [ Application Tier ]                   |
+          EC2 / Docker Node.js                 |
+          Express REST API                     |
+                 |                             |
+                 | TCP 5432                    |
+                 v                             |
+        [ Data Tier ]                          |
+          Amazon RDS PostgreSQL                |
+                 |                             |
+                 +-----------------------------+
+
+                  CI/CD CONTROL PLANE
+                         ^
+                         |
+                 GitHub Webhook
+                         |
+                         v
+                [ Jenkins EC2 ]
+                  |   |   |
+                  |   |   +--> Build/Test
+                  |   +------> Docker
+                  +----------> Deploy to App EC2
+
+SECURITY GROUP IDEA
+Internet -> ALB/Nginx: 80/443
+ALB/Nginx -> App: 80/5000 only
+App -> RDS: 5432 only
+Jenkins -> App: deployment port only
+SSH: restricted to admin IP (not 0.0.0.0/0)

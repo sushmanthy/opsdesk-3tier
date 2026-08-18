@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpsDesk | Engineering Operations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">O</div><div><b>OpsDesk</b><span>Engineering Ops</span></div></div>
+    <nav>
+      <a class="active"><i data-lucide="layout-dashboard"></i>Overview</a>
+      <a><i data-lucide="ticket"></i>Tickets</a>
+      <a><i data-lucide="activity"></i>Service Health</a>
+      <a><i data-lucide="users"></i>Team</a>
+    </nav>
+    <div class="deploy-card"><span class="dot"></span><div><b>Production</b><small>All systems operational</small></div></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><p class="eyebrow">ENGINEERING CONTROL CENTER</p><h1>Good morning, team.</h1></div>
+      <div class="top-actions"><div class="status"><span class="dot"></span> API Connected</div><button class="avatar">SY</button></div>
+    </header>
+
+    <section class="hero">
+      <div><span class="pill">LIVE OPERATIONS</span><h2>Keep every incident<br>moving forward.</h2><p>Track engineering requests, ownership and delivery status from one clean workspace.</p></div>
+      <button class="primary" onclick="openModal()"><i data-lucide="plus"></i> New Ticket</button>
+    </section>
+
+    <section class="stats">
+      <div class="stat"><span>OPEN</span><strong id="openCount">0</strong><small>Needs attention</small></div>
+      <div class="stat"><span>IN PROGRESS</span><strong id="progressCount">0</strong><small>Being worked on</small></div>
+      <div class="stat"><span>CRITICAL</span><strong id="criticalCount">0</strong><small>Priority escalations</small></div>
+      <div class="stat"><span>RESOLVED</span><strong id="resolvedCount">0</strong><small>Closed successfully</small></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><h3>Operational queue</h3><p>Live CRUD data from PostgreSQL</p></div><div class="filters"><input id="search" placeholder="Search tickets..." oninput="render()"><select id="filter" onchange="render()"><option value="">All status</option><option>Open</option><option>In Progress</option><option>Resolved</option></select></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Ticket</th><th>Priority</th><th>Status</th><th>Owner</th><th>Created</th><th></th></tr></thead><tbody id="ticketRows"></tbody></table></div>
+    </section>
+  </main>
+</div>
+
+<div id="modal" class="modal"><div class="modal-box"><div class="modal-head"><div><span class="eyebrow">TICKET WORKFLOW</span><h3 id="modalTitle">Create ticket</h3></div><button class="close" onclick="closeModal()">×</button></div>
+<form onsubmit="saveTicket(event)">
+<input type="hidden" id="ticketId">
+<label>Title<input id="title" required placeholder="e.g. Payment API latency"></label>
+<label>Description<textarea id="description" placeholder="Add context for the engineering team"></textarea></label>
+<div class="grid2"><label>Priority<select id="priority"><option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option></select></label><label>Status<select id="status"><option>Open</option><option>In Progress</option><option>Resolved</option></select></label></div>
+<label>Assignee<input id="assignee" placeholder="Team member"></label>
+<div class="form-actions"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary">Save Ticket</button></div>
+</form></div></div>
+<script>lucide.createIcons()</script><script src="app.js"></script>
+</body>
+</html>
