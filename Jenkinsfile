@@ -51,7 +51,7 @@ pipeline {
 
         stage('Test API') {
             steps {
-                bat 'curl.exe -f http://localhost:5000 || exit /b 1'
+                bat 'curl.exe -f http://localhost:5000/api/health || exit /b 1'
             }
         }
     }
