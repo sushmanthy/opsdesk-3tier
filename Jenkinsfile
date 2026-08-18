@@ -5,6 +5,8 @@ pipeline {
         POSTGRES_DB = 'opsdesk'
         POSTGRES_USER = 'opsdesk'
         POSTGRES_PASSWORD = 'opsdeskpass'
+
+        COMPOSE_PROJECT_NAME = 'opsdesk-3tier'
     }
 
     stages {
@@ -19,31 +21,31 @@ pipeline {
             steps {
                 bat 'docker --version'
                 bat 'docker compose version'
-                bat 'docker compose config'
+                bat 'docker compose -p %COMPOSE_PROJECT_NAME% config'
             }
         }
 
         stage('Build Images') {
             steps {
-                bat 'docker compose build'
+                bat 'docker compose -p %COMPOSE_PROJECT_NAME% build'
             }
         }
 
         stage('Stop Existing Deployment') {
             steps {
-                bat 'docker compose down --remove-orphans'
+                bat 'docker compose -p %COMPOSE_PROJECT_NAME% down --remove-orphans'
             }
         }
 
         stage('Start Application') {
             steps {
-                bat 'docker compose up -d'
+                bat 'docker compose -p %COMPOSE_PROJECT_NAME% up -d'
             }
         }
 
         stage('Verify Containers') {
             steps {
-                bat 'docker compose ps'
+                bat 'docker compose -p %COMPOSE_PROJECT_NAME% ps'
             }
         }
 
@@ -56,7 +58,7 @@ pipeline {
 
     post {
         always {
-            bat 'docker compose ps'
+            bat 'docker compose -p %COMPOSE_PROJECT_NAME% ps'
         }
 
         success {
