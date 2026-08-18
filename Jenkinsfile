@@ -14,40 +14,43 @@ pipeline {
 
     stage('Validate') {
       steps {
-        sh 'docker --version'
-        sh 'docker compose config'
+        bat 'docker --version'
+        bat 'docker compose version'
+        bat 'docker compose config'
       }
     }
 
     stage('Build Images') {
       steps {
-        sh 'docker compose build'
+        bat 'docker compose build'
       }
     }
 
     stage('Test API Container') {
       steps {
-        sh 'docker compose up -d'
-        sh 'sleep 12'
-        sh 'curl -fsS http://localhost/api/health'
+        bat 'docker compose up -d'
+        bat 'timeout /t 12 /nobreak'
+        bat 'curl.exe -fsS http://localhost/api/health'
       }
     }
 
     stage('Deploy') {
       steps {
-        sh 'docker compose up -d --remove-orphans'
+        bat 'docker compose up -d --remove-orphans'
       }
     }
   }
 
   post {
     always {
-      sh 'docker compose ps || true'
-      sh 'docker compose down || true'
+      bat 'docker compose ps'
+      bat 'docker compose down'
     }
+
     success {
       echo 'OpsDesk CI/CD completed successfully.'
     }
+
     failure {
       echo 'Pipeline failed. Check the stage logs.'
     }
