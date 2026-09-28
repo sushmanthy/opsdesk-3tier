@@ -41,13 +41,6 @@ pipeline {
             }
         }
 
-        stage('Tag Images') {
-            steps {
-                bat 'docker tag opsdesk-3tier-backend:latest %BACKEND_IMAGE%'
-                bat 'docker tag opsdesk-3tier-frontend:latest %FRONTEND_IMAGE%'
-            }
-        }
-
         stage('Trivy Security Scan') {
             steps {
                 bat 'if not exist reports mkdir reports'
@@ -62,7 +55,7 @@ pipeline {
             steps {
                 bat 'docker compose -p %COMPOSE_PROJECT_NAME% down --remove-orphans'
 
-                bat 'set BACKEND_IMAGE=%BACKEND_IMAGE%&& set FRONTEND_IMAGE=%FRONTEND_IMAGE%&& docker compose -p %COMPOSE_PROJECT_NAME% up -d'
+                bat 'docker compose -p %COMPOSE_PROJECT_NAME% up -d'
             }
         }
 
@@ -97,7 +90,7 @@ pipeline {
 
         always {
             bat 'docker compose -p %COMPOSE_PROJECT_NAME% ps'
-            archiveArtifacts artifacts: 'reports/*.txt', allowEmptyArchive: false
+            archiveArtifacts artifacts: 'reports/*.txt', allowEmptyArchive: true
         }
 
         success {
