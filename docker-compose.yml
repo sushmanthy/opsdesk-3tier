@@ -3,25 +3,36 @@ services:
     image: postgres:16-alpine
     container_name: opsdesk-db
     restart: unless-stopped
+
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
-    networks: [opsnet]
+
+    networks:
+      - opsnet
+
 
   backend:
-    build: ./backend
+    image: ${BACKEND_IMAGE:-opsdesk-3tier-backend:latest}
+
+    build:
+      context: ./backend
+
     container_name: opsdesk-api
     restart: unless-stopped
+
     environment:
       PORT: 5000
       DB_HOST: db
@@ -29,38 +40,63 @@ services:
       DB_NAME: ${POSTGRES_DB}
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
+
     depends_on:
       db:
         condition: service_healthy
+
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/api/health || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:5000/api/health || exit 1"
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+
     ports:
       - "5000:5000"
-    networks: [opsnet]
+
+    networks:
+      - opsnet
+
 
   frontend:
-    build: ./frontend
+    image: ${FRONTEND_IMAGE:-opsdesk-3tier-frontend:latest}
+
+    build:
+      context: ./frontend
+
     container_name: opsdesk-web
     restart: unless-stopped
+
     depends_on:
       backend:
         condition: service_healthy
+
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1/ || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1/ || exit 1"
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+
     ports:
       - "80:80"
-    networks: [opsnet]
+
+    networks:
+      - opsnet
+
 
 volumes:
   postgres_data:
+
 
 networks:
   opsnet:

@@ -7,6 +7,9 @@ pipeline {
         POSTGRES_PASSWORD = 'opsdeskpass'
 
         COMPOSE_PROJECT_NAME = 'opsdesk-3tier'
+
+        BACKEND_IMAGE = "opsdesk-3tier-backend:${BUILD_NUMBER}"
+        FRONTEND_IMAGE = "opsdesk-3tier-frontend:${BUILD_NUMBER}"
     }
 
     stages {
@@ -17,56 +20,92 @@ pipeline {
             }
         }
 
-        stage('Validate') {
+        stage('Validate Tools') {
             steps {
                 bat 'docker --version'
                 bat 'docker compose version'
+                bat 'trivy --version'
+                bat 'git --version'
+            }
+        }
+
+        stage('Validate Compose') {
+            steps {
                 bat 'docker compose -p %COMPOSE_PROJECT_NAME% config'
             }
         }
 
-        stage('Build Images') {
+        stage('Build Docker Images') {
             steps {
                 bat 'docker compose -p %COMPOSE_PROJECT_NAME% build'
             }
         }
 
-        stage('Stop Existing Deployment') {
+        stage('Tag Images') {
+            steps {
+                bat 'docker tag opsdesk-3tier-backend:latest %BACKEND_IMAGE%'
+                bat 'docker tag opsdesk-3tier-frontend:latest %FRONTEND_IMAGE%'
+            }
+        }
+
+        stage('Trivy Security Scan') {
+            steps {
+                bat 'if not exist reports mkdir reports'
+
+                bat 'trivy image --scanners vuln --severity HIGH,CRITICAL --format table --exit-code 0 -o reports\\trivy-backend.txt %BACKEND_IMAGE%'
+
+                bat 'trivy image --scanners vuln --severity HIGH,CRITICAL --format table --exit-code 0 -o reports\\trivy-frontend.txt %FRONTEND_IMAGE%'
+            }
+        }
+
+        stage('Deploy Application') {
             steps {
                 bat 'docker compose -p %COMPOSE_PROJECT_NAME% down --remove-orphans'
+
+                bat 'set BACKEND_IMAGE=%BACKEND_IMAGE%&& set FRONTEND_IMAGE=%FRONTEND_IMAGE%&& docker compose -p %COMPOSE_PROJECT_NAME% up -d'
             }
         }
 
-        stage('Start Application') {
+        stage('Wait For Services') {
             steps {
-                bat 'docker compose -p %COMPOSE_PROJECT_NAME% up -d'
-            }
-        }
-
-        stage('Verify Containers') {
-            steps {
+                bat 'timeout /t 20 /nobreak'
                 bat 'docker compose -p %COMPOSE_PROJECT_NAME% ps'
             }
         }
 
-        stage('Test API') {
+        stage('Health Check') {
             steps {
-                bat 'curl.exe -f http://localhost:5000/api/health || exit /b 1'
+                bat 'curl.exe -f http://localhost:5000/api/health'
+                bat 'curl.exe -f http://localhost/'
+            }
+        }
+
+        stage('CRUD Smoke Test') {
+            steps {
+                bat 'curl.exe -f http://localhost:5000/api/tickets'
+            }
+        }
+
+        stage('Cleanup Old Images') {
+            steps {
+                bat 'docker image prune -f'
             }
         }
     }
 
     post {
+
         always {
             bat 'docker compose -p %COMPOSE_PROJECT_NAME% ps'
+            archiveArtifacts artifacts: 'reports/*.txt', allowEmptyArchive: false
         }
 
         success {
-            echo 'OpsDesk deployment completed successfully.'
+            echo 'OpsDesk CI/CD pipeline completed successfully.'
         }
 
         failure {
-            echo 'OpsDesk pipeline failed. Check the stage logs.'
+            echo 'OpsDesk CI/CD pipeline failed. Check the failed stage and console output.'
         }
     }
 }
