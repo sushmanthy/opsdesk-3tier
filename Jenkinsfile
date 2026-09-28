@@ -60,9 +60,10 @@ pipeline {
         }
 
         stage('Wait For Services') {
-            steps {
-                bat 'timeout /t 20 /nobreak'
-                bat 'docker compose -p %COMPOSE_PROJECT_NAME% ps'
+    steps {
+        bat 'powershell -NoProfile -Command "Start-Sleep -Seconds 20"'
+        bat 'docker compose -p %COMPOSE_PROJECT_NAME% ps'
+
             }
         }
 
